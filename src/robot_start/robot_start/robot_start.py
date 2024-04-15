@@ -130,7 +130,7 @@ class RobotStart(Node):
                 
                 if (self.offsetcount < self.OFFSET_COUNT):
                     self.offsetcount +=1
-                    # self.accelerometeroffset(self.mpu6050.angular_velocity.x,self.mpu6050.angular_velocity.y,self.mpu6050.angular_velocity.z)                
+                    self.accelerometeroffset(self.mpu6050.angular_velocity.x,self.mpu6050.angular_velocity.y,self.mpu6050.angular_velocity.z)                
                 else:
                     self.offsetcount = self.OFFSET_COUNT
                     self.mpu6050.angular_velocity.x -= self.Gyroscope_Xdata_Offset
@@ -143,7 +143,7 @@ class RobotStart(Node):
                     self.publisherimusensorraw()
             
             self.last_time = self.current_time
-            # rclpy.spin_once(node)
+            # rclpy.spin_once(self)
    
     def serial_data_assignment(self):
 
@@ -159,6 +159,17 @@ class RobotStart(Node):
         self.mpu6050.angular_velocity.y = self.robot_serial.receive_str.sensor_str.link_gyroscope.y_data*self.GYROSCOPE_RADIAN
         self.mpu6050.angular_velocity.z = self.robot_serial.receive_str.sensor_str.link_gyroscope.z_data*self.GYROSCOPE_RADIAN
 
+    def accelerometeroffset(self,gx,gy,gz):
+
+        self.Gyroscope_Xdata_Offset += gx
+        self.Gyroscope_Ydata_Offset += gy
+        self.Gyroscope_Zdata_Offset += gz
+
+        if(self.offsetcount ==self.OFFSET_COUNT):
+            self.Gyroscope_Xdata_Offset =  self.Gyroscope_Xdata_Offset / self.OFFSET_COUNT
+            self.Gyroscope_Ydata_Offset =  self.Gyroscope_Ydata_Offset / self.OFFSET_COUNT
+            self.Gyroscope_Zdata_Offset =  self.Gyroscope_Zdata_Offset / self.OFFSET_COUNT
+    
     def publisherpower(self):
         
         power_msgs  = Float32()
@@ -170,6 +181,7 @@ class RobotStart(Node):
         odom_quat = Quaternion()
         odom_quat = tf_transformations.quaternion_from_euler(self.th, 0,0)
         self.get_logger().info("odom_quat: {}".format(odom_quat))
+
         odom = Odometry()
         odom.header.stamp = self.get_clock().now().to_msg()
         odom.header.frame_id = "odom"
@@ -197,10 +209,54 @@ class RobotStart(Node):
         self.odom_pub.publish(odom)
 
     def publisherimusensor(self):
-        pass
-    def publisherimusensorraw(self):
-        pass
 
+        imusensor = Imu()
+        imusensor.header.stamp = self.get_clock().now().to_msg()
+        imusensor.header.frame_id = "gyro_link"
+
+        imusensor.orientation.x = 0.0
+        imusensor.orientation.y = 0.0
+        imusensor.orientation.z = 0.0
+        imusensor.orientation.w = 0.0
+
+        imusensor.orientation_covariance[0] = 1e6
+        imusensor.orientation_covariance[4] = 1e6
+        imusensor.orientation_covariance[8] = 1e-6
+
+        imusensor.angular_velocity.x = 0.0
+        imusensor.angular_velocity.y = 0.0
+        imusensor.angular_velocity.z = self.mpu6050.angular_velocity.z
+
+        imusensor.angular_velocity_covariance[0] = 1e6
+        imusensor.angular_velocity_covariance[4] = 1e6
+        imusensor.angular_velocity_covariance[8] = 1e-6
+
+        imusensor.linear_acceleration.x = 0.0
+        imusensor.linear_acceleration.y = 0.0
+        imusensor.linear_acceleration.z = 0.0
+
+        self.imu_pub.publish(imusensor)
+
+    def publisherimusensorraw(self):
+
+        imusensorraw = Imu()
+        imusensorraw.header.stamp = self.get_clock().now().to_msg()
+        imusensorraw.header.frame_id = "gyro_link"
+
+        imusensorraw.orientation.x = 0.0
+        imusensorraw.orientation.y = 0.0
+        imusensorraw.orientation.z = 0.0
+        imusensorraw.orientation.w = 0.0
+
+        imusensorraw.angular_velocity.x = self.mpu6050.angular_velocity.x
+        imusensorraw.angular_velocity.y = self.mpu6050.angular_velocity.y
+        imusensorraw.angular_velocity.z = self.mpu6050.angular_velocity.z
+
+        imusensorraw.linear_acceleration.x = 0.0
+        imusensorraw.linear_acceleration.y = 0.0
+        imusensorraw.linear_acceleration.z = 0.0
+
+        self.imu_raw_pub.publish(imusensorraw)
 
 def main(args=None):
     rclpy.init(args=args)
