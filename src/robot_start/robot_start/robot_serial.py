@@ -103,7 +103,7 @@ class RobotSerial():
                 self.receive_str.sensor_str.link_gyroscope.x_data = struct.unpack('h', received_data_bytes[26:28])[0]
                 self.receive_str.sensor_str.link_gyroscope.y_data = struct.unpack('h', received_data_bytes[28:30])[0]
                 self.receive_str.sensor_str.link_gyroscope.z_data = struct.unpack('h', received_data_bytes[30:32])[0]
-                
+     
         return True
         # self.get_logger().info("Verification success")
 

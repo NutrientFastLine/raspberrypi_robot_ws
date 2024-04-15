@@ -33,8 +33,10 @@ class RobotStart(Node):
         self.Gyroscope_Zdata_Offset = 0.0
 
 
-        self.filter_vx_match = 1.0
-        self.filter_vth_match = 1.0
+        self.PI = 3.1415926
+        self.GYROSCOPE_RADIAN = 0.001064
+        self.GYROSCOPE_DEGREE = 16.40
+        self.ACCELEROMETER = 16384.0
         self.OFFSET_COUNT = 40
         
         self.declare_parameter('usart_port', '/dev/ttyUSB0')
@@ -58,31 +60,41 @@ class RobotStart(Node):
         self.odom_pub = self.create_publisher(Odometry,'odom',50)
         self.imu_pub = self.create_publisher(Imu,'/mobile_base/sensors/imu_data',20)
         self.imu_raw_pub = self.create_publisher(Imu,'/mobile_base/sensors/imu_data_raw',20)
-        self.odom_pose_covariance =    [1e-3, 0, 0, 0, 0, 0, 
-                                        0, 1e-3, 0, 0, 0, 0,
-                                        0, 0, 1e6, 0, 0, 0,
-                                        0, 0, 0, 1e6, 0, 0,
-                                        0, 0, 0, 0, 1e6, 0,
-                                        0, 0, 0, 0, 0, 1e3]
-        self.odom_pose_covariance2 =   [1e-9, 0, 0, 0, 0, 0, 
-									    0, 1e-3, 1e-9, 0, 0, 0,
-										0, 0, 1e6, 0, 0, 0,
-										0, 0, 0, 1e6, 0, 0,
-										0, 0, 0, 0, 1e6, 0,
-										0, 0, 0, 0, 0, 1e-9]
-        self.odom_twist_covariance =   [1e-3, 0, 0, 0, 0, 0, 
-                                        0, 1e-3, 0, 0, 0, 0,
-                                        0, 0, 1e6, 0, 0, 0,
-                                        0, 0, 0, 1e6, 0, 0,
-                                        0, 0, 0, 0, 1e6, 0,
-                                        0, 0, 0, 0, 0, 1e3]
-        self.odom_twist_covariance2 =  [1e-9, 0, 0, 0, 0, 0, 
-                                        0, 1e-3, 1e-9, 0, 0, 0,
-                                        0, 0, 1e6, 0, 0, 0,
-                                        0, 0, 0, 1e6, 0, 0,
-                                        0, 0, 0, 0, 1e6, 0,
-                                        0, 0, 0, 0, 0, 1e-9]
-        
+
+        self.odom_pose_covariance = [
+            1e-3, 0.0, 0.0, 0.0, 0.0, 0.0,
+            0.0, 1e-3, 0.0, 0.0, 0.0, 0.0,
+            0.0, 0.0, 1e6, 0.0, 0.0, 0.0,
+            0.0, 0.0, 0.0, 1e6, 0.0, 0.0,
+            0.0, 0.0, 0.0, 0.0, 1e6, 0.0,
+            0.0, 0.0, 0.0, 0.0, 0.0, 1e3
+        ]
+
+        self.odom_pose_covariance2 = [
+            1e-9, 0.0, 0.0, 0.0, 0.0, 0.0,
+            0.0, 1e-3, 1e-9, 0.0, 0.0, 0.0,
+            0.0, 0.0, 1e6, 0.0, 0.0, 0.0,
+            0.0, 0.0, 0.0, 1e6, 0.0, 0.0,
+            0.0, 0.0, 0.0, 0.0, 1e6, 0.0,
+            0.0, 0.0, 0.0, 0.0, 0.0, 1e-9
+        ]
+        self.odom_twist_covariance = [
+            1e-3, 0.0, 0.0, 0.0, 0.0, 0.0,
+            0.0, 1e-3, 0.0, 0.0, 0.0, 0.0,
+            0.0, 0.0, 1e6, 0.0, 0.0, 0.0,
+            0.0, 0.0, 0.0, 1e6, 0.0, 0.0,
+            0.0, 0.0, 0.0, 0.0, 1e6, 0.0,
+            0.0, 0.0, 0.0, 0.0, 0.0, 1e3
+        ]
+
+        self.odom_twist_covariance2 = [
+            1e-9, 0.0, 0.0, 0.0, 0.0, 0.0,
+            0.0, 1e-3, 1e-9, 0.0, 0.0, 0.0,
+            0.0, 0.0, 1e6, 0.0, 0.0, 0.0,
+            0.0, 0.0, 0.0, 1e6, 0.0, 0.0,
+            0.0, 0.0, 0.0, 0.0, 1e6, 0.0,
+            0.0, 0.0, 0.0, 0.0, 0.0, 1e-9
+        ]
 
 # 如果需要使用该数组，只需使用 odom_pose_covariance 即可
 
@@ -99,7 +111,10 @@ class RobotStart(Node):
         self.last_time  =self.get_clock().now()
         while rclpy.ok():
             self.current_time =self.get_clock().now()
-            self.dt = (self.current_time-self.last_time).nanoseconds()
+            # self.current_time.seconds_nanoseconds
+            # self.get_logger().info("current_time: {}".format(self.current_time))
+            self.dt = (self.current_time-self.last_time).nanoseconds/1e9
+            self.get_logger().info("dt: {}".format(self.dt))
 
             if (self.robot_serial.protocol_data_receive() == True):
                 self.get_logger().info("get protocol data ,start assignment")
@@ -128,7 +143,7 @@ class RobotStart(Node):
                     self.publisherimusensorraw()
             
             self.last_time = self.current_time
-            rclpy.spin_once()
+            # rclpy.spin_once(node)
    
     def serial_data_assignment(self):
 
@@ -136,13 +151,13 @@ class RobotStart(Node):
         self.vth = self.robot_serial.receive_str.sensor_str.z_speed *self.filter_vth_match
         self.power_valtage = self.robot_serial.receive_str.sensor_str.source_voltage 
 
-        self.mpu6050.linear_acceleration.x = self.robot_serial.receive_str.link_accelerometer.x_data
-        self.mpu6050.linear_acceleration.y = self.robot_serial.receive_str.link_accelerometer.y_data
-        self.mpu6050.linear_acceleration.z = self.robot_serial.receive_str.link_accelerometer.z_data
+        self.mpu6050.linear_acceleration.x = self.robot_serial.receive_str.sensor_str.link_accelerometer.x_data/self.ACCELEROMETER
+        self.mpu6050.linear_acceleration.y = self.robot_serial.receive_str.sensor_str.link_accelerometer.y_data/self.ACCELEROMETER
+        self.mpu6050.linear_acceleration.z = self.robot_serial.receive_str.sensor_str.link_accelerometer.z_data/self.ACCELEROMETER
         
-        self.mpu6050.angular_velocity.x = self.robot_serial.receive_str.link_gyroscope.x_data
-        self.mpu6050.angular_velocity.y = self.robot_serial.receive_str.link_gyroscope.y_data
-        self.mpu6050.angular_velocity.z = self.robot_serial.receive_str.link_gyroscope.z_data
+        self.mpu6050.angular_velocity.x = self.robot_serial.receive_str.sensor_str.link_gyroscope.x_data*self.GYROSCOPE_RADIAN
+        self.mpu6050.angular_velocity.y = self.robot_serial.receive_str.sensor_str.link_gyroscope.y_data*self.GYROSCOPE_RADIAN
+        self.mpu6050.angular_velocity.z = self.robot_serial.receive_str.sensor_str.link_gyroscope.z_data*self.GYROSCOPE_RADIAN
 
     def publisherpower(self):
         
@@ -153,7 +168,8 @@ class RobotStart(Node):
     def publisherodom(self):
 
         odom_quat = Quaternion()
-        odom_quat = tf_transformations.quaternion_from_euler(0, 0, self.th)
+        odom_quat = tf_transformations.quaternion_from_euler(self.th, 0,0)
+        self.get_logger().info("odom_quat: {}".format(odom_quat))
         odom = Odometry()
         odom.header.stamp = self.get_clock().now().to_msg()
         odom.header.frame_id = "odom"
@@ -161,7 +177,10 @@ class RobotStart(Node):
         odom.pose.pose.position.x = self.x
         odom.pose.pose.position.y = self.y
         odom.pose.pose.position.z = 0.0
-        odom.pose.pose.orientation = odom_quat
+        odom.pose.pose.orientation.x = odom_quat[0]
+        odom.pose.pose.orientation.y = odom_quat[1]
+        odom.pose.pose.orientation.z = odom_quat[2]
+        odom.pose.pose.orientation.w = odom_quat[3]
 
         odom.child_frame_id = self.robot_frame_id
         odom.twist.twist.linear.x =  self.vx
@@ -187,4 +206,5 @@ def main(args=None):
     rclpy.init(args=args)
     node = RobotStart("robot_start")
     node.robotstart_loopprocess()
+    node.destroy_node()
     rclpy.shutdown()
