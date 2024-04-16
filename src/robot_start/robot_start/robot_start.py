@@ -8,6 +8,7 @@ import tf_transformations
 from nav_msgs.msg import Odometry
 from sensor_msgs.msg import Imu
 from geometry_msgs.msg import Quaternion
+from geometry_msgs.msg import Twist
 from std_msgs.msg import Float32
 
 
@@ -42,13 +43,14 @@ class RobotStart(Node):
         self.declare_parameter('usart_port', '/dev/ttyUSB0')
         self.declare_parameter('baud_data', 115200)
         self.declare_parameter('robot_frame_id', 'base_link')
-        # self.declare_parameter('smoother_cmd_vel', '/smoother_cmd_vel')
+        self.declare_parameter('smoother_cmd_vel', '/cmd_vel')
         self.declare_parameter('filter_vx_match',1.0)
         self.declare_parameter('filter_vth_match', 1.0)
 
         self.usart_port = self.get_parameter('usart_port').value
         self.baud_data = self.get_parameter('baud_data').value
         self.robot_frame_id = self.get_parameter('robot_frame_id').value
+        self.smoother_cmd_vel = self.get_parameter('smoother_cmd_vel').value
         self.filter_vx_match = self.get_parameter('filter_vx_match').value
         self.filter_vth_match = self.get_parameter('filter_vth_match').value
 
@@ -60,6 +62,16 @@ class RobotStart(Node):
         self.odom_pub = self.create_publisher(Odometry,'odom',50)
         self.imu_pub = self.create_publisher(Imu,'/mobile_base/sensors/imu_data',20)
         self.imu_raw_pub = self.create_publisher(Imu,'/mobile_base/sensors/imu_data_raw',20)
+
+     # self.subscription = self.create_subscription(
+        #     ProtocolUploadData,
+        #     'upload_data_topic',  # 替换成实际的消息话题名称
+        #     self.data_callback,
+        #     10  # 可以根据需要调整队列大小
+        # )
+        # 创建发布者对象（消息类型、话题名、队列长度）
+        # self.pub = self.create_publisher(String, "chatter", 10)
+        self.cmd_vel_sub = self.create_subscription(Twist,self.smoother_cmd_vel,self.cmd_vel_callback,100)
 
         self.odom_pose_covariance = [
             1e-3, 0.0, 0.0, 0.0, 0.0, 0.0,
@@ -95,17 +107,6 @@ class RobotStart(Node):
             0.0, 0.0, 0.0, 0.0, 1e6, 0.0,
             0.0, 0.0, 0.0, 0.0, 0.0, 1e-9
         ]
-
-# 如果需要使用该数组，只需使用 odom_pose_covariance 即可
-
-     # self.subscription = self.create_subscription(
-        #     ProtocolUploadData,
-        #     'upload_data_topic',  # 替换成实际的消息话题名称
-        #     self.data_callback,
-        #     10  # 可以根据需要调整队列大小
-        # )
-        # 创建发布者对象（消息类型、话题名、队列长度）
-        # self.pub = self.create_publisher(String, "chatter", 10)
 
     def robotstart_loopprocess(self):
         self.last_time  =self.get_clock().now()
@@ -257,7 +258,16 @@ class RobotStart(Node):
         imusensorraw.linear_acceleration.z = 0.0
 
         self.imu_raw_pub.publish(imusensorraw)
+    
+    def cmd_vel_callback(self,twist):
+        
+        protocol_data_send = self.robot_serial.protocol_data_assignment(
+                                                    self.robot_serial.send_str,
+                                                    twist.linear.x,
+                                                    twist.angular.z)
+        self.robot_serial.serial_com.write(protocol_data_send)
 
+        
 def main(args=None):
     rclpy.init(args=args)
     node = RobotStart("robot_start")
