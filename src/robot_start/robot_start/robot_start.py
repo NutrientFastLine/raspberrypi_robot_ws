@@ -2,6 +2,7 @@ import rclpy
 import math
 
 from rclpy.node import Node
+import rclpy.waitable
 from robot_start.robot_serial import RobotSerial
 import tf_transformations   
 
@@ -58,11 +59,6 @@ class RobotStart(Node):
         self.robot_serial= RobotSerial(self.usart_port,self.baud_data)
         self.mpu6050 = Imu()
 
-        self.power_pub = self.create_publisher(Float32,'/robot/powervaltage',20)
-        self.odom_pub = self.create_publisher(Odometry,'odom',50)
-        self.imu_pub = self.create_publisher(Imu,'/mobile_base/sensors/imu_data',20)
-        self.imu_raw_pub = self.create_publisher(Imu,'/mobile_base/sensors/imu_data_raw',20)
-
      # self.subscription = self.create_subscription(
         #     ProtocolUploadData,
         #     'upload_data_topic',  # 替换成实际的消息话题名称
@@ -71,6 +67,12 @@ class RobotStart(Node):
         # )
         # 创建发布者对象（消息类型、话题名、队列长度）
         # self.pub = self.create_publisher(String, "chatter", 10)
+        
+        self.power_pub = self.create_publisher(Float32,'/robot/powervaltage',20)
+        self.odom_pub = self.create_publisher(Odometry,'odom',50)
+        self.imu_pub = self.create_publisher(Imu,'/mobile_base/sensors/imu_data',20)
+        self.imu_raw_pub = self.create_publisher(Imu,'/mobile_base/sensors/imu_data_raw',20)
+
         self.cmd_vel_sub = self.create_subscription(Twist,self.smoother_cmd_vel,self.cmd_vel_callback,100)
 
         self.odom_pose_covariance = [
@@ -118,7 +120,7 @@ class RobotStart(Node):
             self.get_logger().info("dt: {}".format(self.dt))
 
             if (self.robot_serial.protocol_data_receive() == True):
-                self.get_logger().info("get protocol data ,start assignment")
+                #self.get_logger().info("get protocol data ,start assignment")
 
                 self.serial_data_assignment()
 
@@ -144,7 +146,8 @@ class RobotStart(Node):
                     self.publisherimusensorraw()
             
             self.last_time = self.current_time
-            # rclpy.spin_once(self)
+            rclpy.spin_once(self, timeout_sec=0.05 )
+            
    
     def serial_data_assignment(self):
 
@@ -181,7 +184,7 @@ class RobotStart(Node):
 
         odom_quat = Quaternion()
         odom_quat = tf_transformations.quaternion_from_euler(self.th, 0,0)
-        self.get_logger().info("odom_quat: {}".format(odom_quat))
+        #self.get_logger().info("odom_quat: {}".format(odom_quat))
 
         odom = Odometry()
         odom.header.stamp = self.get_clock().now().to_msg()
@@ -258,9 +261,10 @@ class RobotStart(Node):
         imusensorraw.linear_acceleration.z = 0.0
 
         self.imu_raw_pub.publish(imusensorraw)
-    
+    	
     def cmd_vel_callback(self,twist):
-        
+    
+        self.get_logger().info("I am in cmd_vel_callback")
         protocol_data_send = self.robot_serial.protocol_data_assignment(
                                                     self.robot_serial.send_str,
                                                     twist.linear.x,
