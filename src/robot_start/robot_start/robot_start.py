@@ -187,7 +187,7 @@ class RobotStart(Node):
 
         odom_quat = Quaternion()
         odom_quat = tf_transformations.quaternion_from_euler(0,0,self.th)
-        self.get_logger().info("odom_quat: {}".format(odom_quat))
+        #self.get_logger().info("odom_quat: {}".format(odom_quat))
 
         transform = TransformStamped()
         transform.header.stamp = self.get_clock().now().to_msg()
