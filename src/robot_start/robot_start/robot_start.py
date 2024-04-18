@@ -115,12 +115,14 @@ class RobotStart(Node):
 
     def robotstart_loopprocess(self):
         self.last_time  =self.get_clock().now()
+        counter = 1
         while rclpy.ok():
             self.current_time =self.get_clock().now()
             # self.current_time.seconds_nanoseconds
+            self.get_logger().info("Number of program loops: {}".format(counter))
             # self.get_logger().info("current_time: {}".format(self.current_time))
             self.dt = (self.current_time-self.last_time).nanoseconds/1e9
-            self.get_logger().info("dt: {}".format(self.dt))
+            #self.get_logger().info("dt: {}".format(self.dt))
 
             if (self.robot_serial.protocol_data_receive() == True):
                 #self.get_logger().info("get protocol data ,start assignment")
@@ -147,7 +149,8 @@ class RobotStart(Node):
                     self.publisherodom()
                     self.publisherimusensor()
                     self.publisherimusensorraw()
-            
+
+            counter += 1
             self.last_time = self.current_time
             rclpy.spin_once(self, timeout_sec=0.05 )
             

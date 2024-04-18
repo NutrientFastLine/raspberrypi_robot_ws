@@ -31,21 +31,44 @@ def generate_launch_description():
                 'robot_frame_id': robot_frame_id,
                 'smoother_cmd_vel': smoother_cmd_vel,
                 'filter_vx_match': filter_vx_match,
-                'filter_vth_match': filter_vth_match
+                'filter_vth_match': filter_vth_match,
             }
         ],
         output='screen')
 
-    teleop_twist_keyboard_node = Node(
-        package='teleop_twist_keyboard',
-        executable='teleop_twist_keyboard',
-        name='teleop_twist_keyboard',
+    channel_type =  LaunchConfiguration('channel_type', default='serial')
+    
+    serial_port = LaunchConfiguration('serial_port', default='/dev/raspberrypi_sllidar')
+    
+    serial_baudrate = LaunchConfiguration('serial_baudrate', default='115200')
+    frame_id = LaunchConfiguration('frame_id', default='laser')
+    
+    inverted = LaunchConfiguration('inverted', default='false')
+    
+    angle_compensate = LaunchConfiguration('angle_compensate', default='true')
+    
+    scan_mode = LaunchConfiguration('scan_mode', default='Sensitivity')
+
+    sllidar_ros2_node = Node(
+        package='sllidar_ros2',
+        executable='sllidar_node',
+        name='sllidar_node',
+        parameters=[
+            {
+                'channel_type': channel_type,
+                'serial_port': serial_port,
+                'serial_baudrate': serial_baudrate,
+                'frame_id': frame_id,
+                'inverted': inverted,
+                'angle_compensate': angle_compensate
+            }
+        ],
         output='screen')
 
 
     #===============================================定义启动文件========================================================
     ld = LaunchDescription()
-    ld.add_action(teleop_twist_keyboard_node)
     ld.add_action(robot_start_node)
+    ld.add_action(sllidar_ros2_node)
 
     return ld
