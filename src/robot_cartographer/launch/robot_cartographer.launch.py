@@ -10,7 +10,7 @@ def generate_launch_description():
     # 定位到功能包的地址
     pkg_share = FindPackageShare(package='robot_cartographer').find('robot_cartographer')
     
-    #=====================运行节点需要的配置=======================================================================
+    #========启动robot_cartographer建图节点cartographer_node、cartographer_occupancy_grid_node========================================================
     # 是否使用仿真时间，我们用gazebo，这里设置成true
     use_sim_time = LaunchConfiguration('use_sim_time', default='false')
     # 地图的分辨率
@@ -24,8 +24,6 @@ def generate_launch_description():
     rviz_config_dir = os.path.join(pkg_share, 'config')+"/cartographer.rviz"
     print(f"rviz config in {rviz_config_dir}")
 
-    
-    #=====================声明三个节点，cartographer/occupancy_grid_node/rviz_node=================================
     cartographer_node = Node(
         package='cartographer_ros',
         executable='cartographer_node',
@@ -51,10 +49,95 @@ def generate_launch_description():
         parameters=[{'use_sim_time': use_sim_time}],
         output='screen')
     
+    #==========启动robot_desscription URDF文件========================================================
     
+    pkg_share1 = FindPackageShare(package='robot_description').find('robot_description') 
+    urdf_model_path = os.path.join(pkg_share1, f'urdf/{"robot_base.urdf"}')
 
-    #===============================================定义启动文件========================================================
+    robot_state_publisher_node = Node(
+        package='robot_state_publisher',
+        executable='robot_state_publisher',
+        arguments=[urdf_model_path]
+        )
+
+    joint_state_publisher_node = Node(
+        package='joint_state_publisher',
+        executable='joint_state_publisher',
+        name='joint_state_publisher',
+        arguments=[urdf_model_path]
+        )
+    
+    #=========启动robot_start节点========================================================
+
+    usart_port = LaunchConfiguration('usart_port', default='/dev/raspberrypi_base')
+
+    baud_data = LaunchConfiguration('baud_data', default= '115200') 
+
+    robot_frame_id = LaunchConfiguration('robot_frame_id', default='base_link')
+
+    smoother_cmd_vel = LaunchConfiguration('smoother_cmd_vel', default='/cmd_vel')
+
+    filter_vx_match = LaunchConfiguration('filter_vx_match', default='1.0')
+
+    filter_vth_match = LaunchConfiguration('filter_vth_match', default='1.0')
+
+    robot_start_node = Node(
+        package='robot_start',
+        executable='robot_start',
+        name='robot_start',
+        parameters=[
+            {
+                'usart_port': usart_port,
+                'baud_data': baud_data,
+                'robot_frame_id': robot_frame_id,
+                'smoother_cmd_vel': smoother_cmd_vel,
+                'filter_vx_match': filter_vx_match,
+                'filter_vth_match': filter_vth_match,
+            }
+        ],
+        output='screen')
+    
+    
+    #=========启动sllidar节点========================================================
+    channel_type =  LaunchConfiguration('channel_type', default='serial')
+    
+    serial_port = LaunchConfiguration('serial_port', default='/dev/raspberrypi_sllidar')
+    
+    serial_baudrate = LaunchConfiguration('serial_baudrate', default='115200')
+    frame_id = LaunchConfiguration('frame_id', default='laser')
+    
+    inverted = LaunchConfiguration('inverted', default='false')
+    
+    angle_compensate = LaunchConfiguration('angle_compensate', default='true')
+    
+    # scan_mode = LaunchConfiguration('scan_mode', default='Sensitivity')
+
+    sllidar_ros2_node = Node(
+        package='sllidar_ros2',
+        executable='sllidar_node',
+        name='sllidar_node',
+        parameters=[
+            {
+                'channel_type': channel_type,
+                'serial_port': serial_port,
+                'serial_baudrate': serial_baudrate,
+                'frame_id': frame_id,
+                'inverted': inverted,
+                'angle_compensate': angle_compensate
+            }
+        ],
+        output='screen')
+    
+    
+    
+    #=========定义启动文件========================================================
     ld = LaunchDescription()
+    ld.add_action(joint_state_publisher_node)
+    ld.add_action(robot_state_publisher_node)
+
+    ld.add_action(robot_start_node)
+    ld.add_action(sllidar_ros2_node)
+
     ld.add_action(cartographer_node)
     ld.add_action(cartographer_occupancy_grid_node)
     ld.add_action(rviz_node)
