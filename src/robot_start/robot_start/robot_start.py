@@ -45,6 +45,7 @@ class RobotStart(Node):
         self.declare_parameter('usart_port', '/dev/ttyUSB0')
         self.declare_parameter('baud_data', 115200)
         self.declare_parameter('robot_frame_id', 'base_link')
+        self.declare_parameter('odom_child_id', 'base_footprint')        
         self.declare_parameter('smoother_cmd_vel', '/cmd_vel')
         self.declare_parameter('filter_vx_match',1.0)
         self.declare_parameter('filter_vth_match', 1.0)
@@ -52,6 +53,7 @@ class RobotStart(Node):
         self.usart_port = self.get_parameter('usart_port').value
         self.baud_data = self.get_parameter('baud_data').value
         self.robot_frame_id = self.get_parameter('robot_frame_id').value
+        self.odom_child_id = self.get_parameter('odom_child_id').value
         self.smoother_cmd_vel = self.get_parameter('smoother_cmd_vel').value
         self.filter_vx_match = self.get_parameter('filter_vx_match').value
         self.filter_vth_match = self.get_parameter('filter_vth_match').value
@@ -70,7 +72,7 @@ class RobotStart(Node):
         # self.pub = self.create_publisher(String, "chatter", 10)
         
         self.power_pub = self.create_publisher(Float32,'/robot/powervaltage',20)
-        self.odom_pub = self.create_publisher(Odometry,'odom',50)
+        self.odom_pub = self.create_publisher(Odometry,'/odom',50)
         self.imu_pub = self.create_publisher(Imu,'/mobile_base/sensors/imu_data',20)
         self.imu_raw_pub = self.create_publisher(Imu,'/mobile_base/sensors/imu_data_raw',20)
 
@@ -119,7 +121,7 @@ class RobotStart(Node):
         while rclpy.ok():
             self.current_time =self.get_clock().now()
             # self.current_time.seconds_nanoseconds
-            self.get_logger().info("Number of program loops: {}".format(counter))
+            # self.get_logger().info("Number of program loops: {}".format(counter))
             # self.get_logger().info("current_time: {}".format(self.current_time))
             self.dt = (self.current_time-self.last_time).nanoseconds/1e9
             #self.get_logger().info("dt: {}".format(self.dt))
@@ -195,7 +197,7 @@ class RobotStart(Node):
         transform = TransformStamped()
         transform.header.stamp = self.get_clock().now().to_msg()
         transform.header.frame_id = "odom"
-        transform.child_frame_id = "base_footprint"
+        transform.child_frame_id = self.odom_child_id
         transform.transform.translation.x = self.x
         transform.transform.translation.y = self.y
         transform.transform.translation.z = 0.0

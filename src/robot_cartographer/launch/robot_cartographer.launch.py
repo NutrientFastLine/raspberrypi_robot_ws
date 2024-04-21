@@ -51,20 +51,20 @@ def generate_launch_description():
     
     #==========启动robot_desscription URDF文件========================================================
     
-    pkg_share1 = FindPackageShare(package='robot_description').find('robot_description') 
-    urdf_model_path = os.path.join(pkg_share1, f'urdf/{"robot_base.urdf"}')
+    desscription_pkg_share = FindPackageShare(package='robot_description').find('robot_description') 
+    desscription_urdf_model_path = os.path.join(desscription_pkg_share, f'urdf/{"robot_base.urdf"}')
 
     robot_state_publisher_node = Node(
         package='robot_state_publisher',
         executable='robot_state_publisher',
-        arguments=[urdf_model_path]
+        arguments=[desscription_urdf_model_path]
         )
 
     joint_state_publisher_node = Node(
         package='joint_state_publisher',
         executable='joint_state_publisher',
         name='joint_state_publisher',
-        arguments=[urdf_model_path]
+        arguments=[desscription_urdf_model_path]
         )
     
     #=========启动robot_start节点========================================================
@@ -74,6 +74,8 @@ def generate_launch_description():
     baud_data = LaunchConfiguration('baud_data', default= '115200') 
 
     robot_frame_id = LaunchConfiguration('robot_frame_id', default='base_link')
+
+    odom_child_id = LaunchConfiguration('odom_child_id', default='base_footprint')
 
     smoother_cmd_vel = LaunchConfiguration('smoother_cmd_vel', default='/cmd_vel')
 
@@ -90,6 +92,7 @@ def generate_launch_description():
                 'usart_port': usart_port,
                 'baud_data': baud_data,
                 'robot_frame_id': robot_frame_id,
+                'odom_child_id' : odom_child_id,
                 'smoother_cmd_vel': smoother_cmd_vel,
                 'filter_vx_match': filter_vx_match,
                 'filter_vth_match': filter_vth_match,
@@ -99,18 +102,19 @@ def generate_launch_description():
     
     
     #=========启动sllidar节点========================================================
-    channel_type =  LaunchConfiguration('channel_type', default='serial')
+    sllidar_channel_type =  LaunchConfiguration('channel_type', default='serial')
     
-    serial_port = LaunchConfiguration('serial_port', default='/dev/raspberrypi_sllidar')
+    sllidar_serial_port = LaunchConfiguration('serial_port', default='/dev/raspberrypi_sllidar')
     
-    serial_baudrate = LaunchConfiguration('serial_baudrate', default='115200')
-    frame_id = LaunchConfiguration('frame_id', default='laser')
+    sllidar_serial_baudrate = LaunchConfiguration('serial_baudrate', default='115200')
+
+    sllidar_frame_id = LaunchConfiguration('frame_id', default='laser_link')
     
-    inverted = LaunchConfiguration('inverted', default='false')
+    sllidar_inverted = LaunchConfiguration('inverted', default='false')
     
-    angle_compensate = LaunchConfiguration('angle_compensate', default='true')
+    sllidar_angle_compensate = LaunchConfiguration('angle_compensate', default='true')
     
-    # scan_mode = LaunchConfiguration('scan_mode', default='Sensitivity')
+    # sllidar_scan_mode = LaunchConfiguration('scan_mode', default='Sensitivity')
 
     sllidar_ros2_node = Node(
         package='sllidar_ros2',
@@ -118,12 +122,12 @@ def generate_launch_description():
         name='sllidar_node',
         parameters=[
             {
-                'channel_type': channel_type,
-                'serial_port': serial_port,
-                'serial_baudrate': serial_baudrate,
-                'frame_id': frame_id,
-                'inverted': inverted,
-                'angle_compensate': angle_compensate
+                'channel_type': sllidar_channel_type,
+                'serial_port': sllidar_serial_port,
+                'serial_baudrate': sllidar_serial_baudrate,
+                'frame_id': sllidar_frame_id,
+                'inverted': sllidar_inverted,
+                'angle_compensate': sllidar_angle_compensate
             }
         ],
         output='screen')
@@ -140,7 +144,7 @@ def generate_launch_description():
 
     ld.add_action(cartographer_node)
     ld.add_action(cartographer_occupancy_grid_node)
-    ld.add_action(rviz_node)
+    # ld.add_action(rviz_node)
 
     return ld
 
