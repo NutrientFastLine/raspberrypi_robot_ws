@@ -45,7 +45,7 @@ class RobotStart(Node):
         self.declare_parameter('usart_port', '/dev/ttyUSB0')
         self.declare_parameter('baud_data', 115200)
         self.declare_parameter('robot_frame_id', 'base_link')
-        self.declare_parameter('odom_child_id', 'base_footprint')        
+        self.declare_parameter('odom_child_id', 'base_link')        
         self.declare_parameter('smoother_cmd_vel', '/cmd_vel')
         self.declare_parameter('filter_vx_match',1.0)
         self.declare_parameter('filter_vth_match', 1.0)

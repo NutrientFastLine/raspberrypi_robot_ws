@@ -13,6 +13,8 @@ def generate_launch_description():
     baud_data = LaunchConfiguration('baud_data', default= '115200') 
 
     robot_frame_id = LaunchConfiguration('robot_frame_id', default='base_link')
+    
+    odom_child_id = LaunchConfiguration('odom_child_id', default='base_link')
 
     smoother_cmd_vel = LaunchConfiguration('smoother_cmd_vel', default='/cmd_vel')
 
@@ -29,6 +31,7 @@ def generate_launch_description():
                 'usart_port': usart_port,
                 'baud_data': baud_data,
                 'robot_frame_id': robot_frame_id,
+                'odom_child_id' : odom_child_id,
                 'smoother_cmd_vel': smoother_cmd_vel,
                 'filter_vx_match': filter_vx_match,
                 'filter_vth_match': filter_vth_match,

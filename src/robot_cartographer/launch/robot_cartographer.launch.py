@@ -75,7 +75,7 @@ def generate_launch_description():
 
     robot_frame_id = LaunchConfiguration('robot_frame_id', default='base_link')
 
-    odom_child_id = LaunchConfiguration('odom_child_id', default='base_footprint')
+    odom_child_id = LaunchConfiguration('odom_child_id', default='base_link')
 
     smoother_cmd_vel = LaunchConfiguration('smoother_cmd_vel', default='/cmd_vel')
 
