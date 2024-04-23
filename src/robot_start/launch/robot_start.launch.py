@@ -1,7 +1,8 @@
+import os
 from launch import LaunchDescription
 from launch_ros.actions import Node
 from launch.substitutions import LaunchConfiguration
-
+from launch_ros.substitutions import FindPackageShare
 
 
 def generate_launch_description():
@@ -44,7 +45,7 @@ def generate_launch_description():
     serial_port = LaunchConfiguration('serial_port', default='/dev/raspberrypi_sllidar')
     
     serial_baudrate = LaunchConfiguration('serial_baudrate', default='115200')
-    frame_id = LaunchConfiguration('frame_id', default='laser')
+    frame_id = LaunchConfiguration('frame_id', default='laser_link')
     
     inverted = LaunchConfiguration('inverted', default='false')
     
@@ -68,9 +69,29 @@ def generate_launch_description():
         ],
         output='screen')
 
+    #==========启动robot_desscription URDF文件========================================================
+    
+    desscription_pkg_share = FindPackageShare(package='robot_description').find('robot_description') 
+    desscription_urdf_model_path = os.path.join(desscription_pkg_share, f'urdf/{"robot_base.urdf"}')
 
+    robot_state_publisher_node = Node(
+        package='robot_state_publisher',
+        executable='robot_state_publisher',
+        arguments=[desscription_urdf_model_path]
+        )
+
+    joint_state_publisher_node = Node(
+        package='joint_state_publisher',
+        executable='joint_state_publisher',
+        name='joint_state_publisher',
+        arguments=[desscription_urdf_model_path]
+        )
     #===============================================定义启动文件========================================================
     ld = LaunchDescription()
+    
+    ld.add_action(joint_state_publisher_node)
+    ld.add_action(robot_state_publisher_node)
+
     ld.add_action(robot_start_node)
     ld.add_action(sllidar_ros2_node)
 
