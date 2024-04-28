@@ -159,6 +159,22 @@ class RobotStart(Node):
    
     def serial_data_assignment(self):
 
+        # self.get_logger().info("I am in serial_data_assignment")
+        # self.get_logger().info("current_X: {}".format(self.x))
+        # self.get_logger().info("current_Y: {}".format(self.y))
+        # self.get_logger().info("current_TH: {}".format(self.th))
+        
+        # self.get_logger().info("current_VX: {}".format(self.vx))
+        # self.get_logger().info("current_VTH: {}".format(self.vth))
+
+        # self.get_logger().info("current_linear_acceleration.x: {}".format(self.mpu6050.linear_acceleration.x))
+        # self.get_logger().info("current_linear_acceleration.y: {}".format(self.mpu6050.linear_acceleration.y))
+        # self.get_logger().info("current_linear_acceleration.z: {}".format(self.mpu6050.linear_acceleration.z))
+
+        # self.get_logger().info("current_angular_velocity.x: {}".format(self.mpu6050.angular_velocity.x))
+        # self.get_logger().info("current_angular_velocity.y: {}".format(self.mpu6050.angular_velocity.y))
+        # self.get_logger().info("current_angular_velocity.z: {}".format(self.mpu6050.angular_velocity.z))
+
         self.vx =self.robot_serial.receive_str.sensor_str.x_speed *self.filter_vx_match
         self.vth = self.robot_serial.receive_str.sensor_str.z_speed *self.filter_vth_match
         self.power_valtage = self.robot_serial.receive_str.sensor_str.source_voltage 
@@ -219,7 +235,7 @@ class RobotStart(Node):
         odom.pose.pose.orientation.z = odom_quat[2]
         odom.pose.pose.orientation.w = odom_quat[3]
 
-        odom.child_frame_id = self.robot_frame_id
+        odom.child_frame_id = self.odom_child_id
         odom.twist.twist.linear.x =  self.vx
         odom.twist.twist.linear.y =  0.0
         odom.twist.twist.angular.z = self.vth
@@ -285,7 +301,13 @@ class RobotStart(Node):
     	
     def cmd_vel_callback(self,twist):
     
-        self.get_logger().info("I am in cmd_vel_callback")
+        # self.get_logger().info("I am in cmd_vel_callback")
+        # self.get_logger().info("current_X: {}".format(self.x))
+        # self.get_logger().info("current_Y: {}".format(self.y))
+        # self.get_logger().info("current_TH: {}".format(self.th))
+        # self.get_logger().info("current_VX: {}".format(self.vx))
+        # self.get_logger().info("current_VTH: {}".format(self.vth))
+
         protocol_data_send = self.robot_serial.protocol_data_assignment(
                                                     self.robot_serial.send_str,
                                                     twist.linear.x,
