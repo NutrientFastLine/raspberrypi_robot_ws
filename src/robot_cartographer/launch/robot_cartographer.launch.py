@@ -7,20 +7,20 @@ from launch_ros.substitutions import FindPackageShare
 
 def generate_launch_description():
     # 定位到功能包的地址
-    pkg_share = FindPackageShare(package='robot_cartographer').find('robot_cartographer')
+    robot_cartographer_pkg_share = FindPackageShare(package='robot_cartographer').find('robot_cartographer')
     
     #========启动robot_cartographer建图节点cartographer_node、cartographer_occupancy_grid_node========================================================
-    # 是否使用仿真时间，我们用gazebo，这里设置成true
+    # 是否使用仿真时间，这里设置成False
     use_sim_time = LaunchConfiguration('use_sim_time', default='false')
     # 地图的分辨率
     resolution = LaunchConfiguration('resolution', default='0.05')
     # 地图的发布周期
     publish_period_sec = LaunchConfiguration('publish_period_sec', default='1.0')
     # 配置文件夹路径
-    configuration_directory = LaunchConfiguration('configuration_directory',default= os.path.join(pkg_share, 'config') )
+    configuration_directory = LaunchConfiguration('configuration_directory',default= os.path.join(robot_cartographer_pkg_share, 'config') )
     # 配置文件
     configuration_basename = LaunchConfiguration('configuration_basename', default='robot_2d.lua')
-    rviz_config_dir = os.path.join(pkg_share, 'config')+"/cartographer.rviz"
+    rviz_config_dir = os.path.join(robot_cartographer_pkg_share, 'config')+"/cartographer.rviz"
     print(f"rviz config in {rviz_config_dir}")
 
     cartographer_node = Node(
@@ -29,6 +29,7 @@ def generate_launch_description():
         name='cartographer_node',
         output='screen',
         parameters=[{'use_sim_time': use_sim_time}],
+        remappings = [('odom', '/odometry/filtered')],  #这里使用robot_localization  所以需要将话题重映射
         arguments=['-configuration_directory', configuration_directory,
                    '-configuration_basename', configuration_basename])
 
@@ -66,20 +67,15 @@ def generate_launch_description():
         arguments=[desscription_urdf_model_path]
         )
     
-    #=========启动robot_start节点========================================================
+    #=====================运行底盘节点需要的配置==========================================================
 
     usart_port = LaunchConfiguration('usart_port', default='/dev/raspberrypi_base')
-
     baud_data = LaunchConfiguration('baud_data', default= '115200') 
-
-    robot_frame_id = LaunchConfiguration('robot_frame_id', default='base_link')
-
+    robot_frame_id = LaunchConfiguration('robot_frame_id', default='base_link')  
     odom_child_id = LaunchConfiguration('odom_child_id', default='base_link')
-
     smoother_cmd_vel = LaunchConfiguration('smoother_cmd_vel', default='/cmd_vel')
-
+    odom_pub_topic = LaunchConfiguration('odom_pub_topic', default='/odom_diff')
     filter_vx_match = LaunchConfiguration('filter_vx_match', default='1.0')
-
     filter_vth_match = LaunchConfiguration('filter_vth_match', default='1.0')
 
     robot_start_node = Node(
@@ -93,27 +89,22 @@ def generate_launch_description():
                 'robot_frame_id': robot_frame_id,
                 'odom_child_id' : odom_child_id,
                 'smoother_cmd_vel': smoother_cmd_vel,
+                'odom_pub_topic' : odom_pub_topic,
                 'filter_vx_match': filter_vx_match,
                 'filter_vth_match': filter_vth_match,
             }
         ],
         output='screen')
     
-    
-    #=========启动sllidar节点========================================================
-    sllidar_channel_type =  LaunchConfiguration('channel_type', default='serial')
-    
-    sllidar_serial_port = LaunchConfiguration('serial_port', default='/dev/raspberrypi_sllidar')
-    
-    sllidar_serial_baudrate = LaunchConfiguration('serial_baudrate', default='115200')
+    #=====================运行雷达节点需要的配置==========================================================
 
-    sllidar_frame_id = LaunchConfiguration('frame_id', default='laser_link')
-    
-    sllidar_inverted = LaunchConfiguration('inverted', default='false')
-    
-    sllidar_angle_compensate = LaunchConfiguration('angle_compensate', default='true')
-    
-    # sllidar_scan_mode = LaunchConfiguration('scan_mode', default='Sensitivity')
+    channel_type =  LaunchConfiguration('channel_type', default='serial')   
+    serial_port = LaunchConfiguration('serial_port', default='/dev/raspberrypi_sllidar')   
+    serial_baudrate = LaunchConfiguration('serial_baudrate', default='115200')
+    frame_id = LaunchConfiguration('frame_id', default='laser_link')   
+    inverted = LaunchConfiguration('inverted', default='false')  
+    angle_compensate = LaunchConfiguration('angle_compensate', default='true')   
+    # scan_mode = LaunchConfiguration('scan_mode', default='Sensitivity')
 
     sllidar_ros2_node = Node(
         package='sllidar_ros2',
@@ -121,17 +112,27 @@ def generate_launch_description():
         name='sllidar_node',
         parameters=[
             {
-                'channel_type': sllidar_channel_type,
-                'serial_port': sllidar_serial_port,
-                'serial_baudrate': sllidar_serial_baudrate,
-                'frame_id': sllidar_frame_id,
-                'inverted': sllidar_inverted,
-                'angle_compensate': sllidar_angle_compensate
+                'channel_type': channel_type,
+                'serial_port': serial_port,
+                'serial_baudrate': serial_baudrate,
+                'frame_id': frame_id,
+                'inverted': inverted,
+                'angle_compensate': angle_compensate
             }
         ],
         output='screen')
     
+    #==========启动robot_localization 融合odom和imu数据========================================================
     
+    robot_start_pkg = FindPackageShare(package='robot_start').find('robot_start') 
+
+    ekf_node = Node(
+        package='robot_localization',
+        executable='ekf_node',
+        name='ekf_filter_node',
+        output='screen',
+        parameters=[os.path.join(robot_start_pkg, 'params', 'ekf.yaml')],
+    )     
     
     #=========定义启动文件========================================================
     ld = LaunchDescription()
@@ -140,6 +141,7 @@ def generate_launch_description():
 
     ld.add_action(robot_start_node)
     ld.add_action(sllidar_ros2_node)
+    ld.add_action(ekf_node)
 
     ld.add_action(cartographer_node)
     ld.add_action(cartographer_occupancy_grid_node)

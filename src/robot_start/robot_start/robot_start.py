@@ -3,6 +3,7 @@ import math
 
 from rclpy.node import Node
 from robot_start.robot_serial import RobotSerial
+from robot_start.robot_imu import Update_IMU
 import tf_transformations
 from tf2_ros import TransformBroadcaster
 
@@ -28,6 +29,7 @@ class RobotStart(Node):
         self.last_time = 0.0
         self.current_time =0.0
         self.dt =0.0
+        self.quaternion = []
 
         self.power_valtage = 0.0
         self.offsetcount = 0
@@ -47,6 +49,7 @@ class RobotStart(Node):
         self.declare_parameter('robot_frame_id', 'base_link')
         self.declare_parameter('odom_child_id', 'base_link')        
         self.declare_parameter('smoother_cmd_vel', '/cmd_vel')
+        self.declare_parameter('odom_pub_topic', '/odom')
         self.declare_parameter('filter_vx_match',1.0)
         self.declare_parameter('filter_vth_match', 1.0)
 
@@ -55,26 +58,17 @@ class RobotStart(Node):
         self.robot_frame_id = self.get_parameter('robot_frame_id').value
         self.odom_child_id = self.get_parameter('odom_child_id').value
         self.smoother_cmd_vel = self.get_parameter('smoother_cmd_vel').value
+        self.odom_pub_topic = self.get_parameter('odom_pub_topic').value
         self.filter_vx_match = self.get_parameter('filter_vx_match').value
         self.filter_vth_match = self.get_parameter('filter_vth_match').value
 
-
         self.robot_serial= RobotSerial(self.usart_port,self.baud_data)
         self.mpu6050 = Imu()
-
-     # self.subscription = self.create_subscription(
-        #     ProtocolUploadData,
-        #     'upload_data_topic',  # 替换成实际的消息话题名称
-        #     self.data_callback,
-        #     10  # 可以根据需要调整队列大小
-        # )
-        # 创建发布者对象（消息类型、话题名、队列长度）
-        # self.pub = self.create_publisher(String, "chatter", 10)
         
         self.power_pub = self.create_publisher(Float32,'/robot/powervaltage',20)
-        self.odom_pub = self.create_publisher(Odometry,'/odom',50)
-        self.imu_pub = self.create_publisher(Imu,'/mobile_base/sensors/imu_data',20)
-        self.imu_raw_pub = self.create_publisher(Imu,'/mobile_base/sensors/imu_data_raw',20)
+        self.odom_pub = self.create_publisher(Odometry,self.odom_pub_topic,50)
+        self.imu_pub = self.create_publisher(Imu,'/imu_data',20)
+        self.imu_raw_pub = self.create_publisher(Imu,'/imu_data_raw',20)
 
         self.cmd_vel_sub = self.create_subscription(Twist,self.smoother_cmd_vel,self.cmd_vel_callback,100)
 
@@ -147,6 +141,8 @@ class RobotStart(Node):
                     self.mpu6050.angular_velocity.y -= self.Gyroscope_Ydata_Offset
                     self.mpu6050.angular_velocity.z -= self.Gyroscope_Zdata_Offset
                     
+                    self.quaternion = Update_IMU(0.0,0.0,self.mpu6050.linear_acceleration.z,0.0,0.0,self.mpu6050.angular_velocity.z)
+                
                     self.publisherpower()
                     self.publisherodom()
                     self.publisherimusensor()
@@ -208,7 +204,7 @@ class RobotStart(Node):
 
         odom_quat = Quaternion()
         odom_quat = tf_transformations.quaternion_from_euler(0,0,self.th)
-        #self.get_logger().info("odom_quat: {}".format(odom_quat))
+        # self.get_logger().info("odom_quat: {}".format(odom_quat))
 
         transform = TransformStamped()
         transform.header.stamp = self.get_clock().now().to_msg()
@@ -238,6 +234,10 @@ class RobotStart(Node):
         odom.child_frame_id = self.odom_child_id
         odom.twist.twist.linear.x =  self.vx
         odom.twist.twist.linear.y =  0.0
+        odom.twist.twist.linear.z =  0.0
+
+        odom.twist.twist.angular.x = 0.0
+        odom.twist.twist.angular.y = 0.0
         odom.twist.twist.angular.z = self.vth
 
         if(self.vx == 0):
@@ -253,12 +253,12 @@ class RobotStart(Node):
 
         imusensor = Imu()
         imusensor.header.stamp = self.get_clock().now().to_msg()
-        imusensor.header.frame_id = "gyro_link"
+        imusensor.header.frame_id = "imu_link"
 
-        imusensor.orientation.x = 0.0
-        imusensor.orientation.y = 0.0
-        imusensor.orientation.z = 0.0
-        imusensor.orientation.w = 0.0
+        imusensor.orientation.x = self.quaternion[0]
+        imusensor.orientation.y = self.quaternion[1]
+        imusensor.orientation.z = self.quaternion[2]
+        imusensor.orientation.w = self.quaternion[3]
 
         imusensor.orientation_covariance[0] = 1e6
         imusensor.orientation_covariance[4] = 1e6
@@ -282,7 +282,7 @@ class RobotStart(Node):
 
         imusensorraw = Imu()
         imusensorraw.header.stamp = self.get_clock().now().to_msg()
-        imusensorraw.header.frame_id = "gyro_link"
+        imusensorraw.header.frame_id = "imu_link"
 
         imusensorraw.orientation.x = 0.0
         imusensorraw.orientation.y = 0.0

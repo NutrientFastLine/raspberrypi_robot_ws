@@ -5,7 +5,7 @@ options = {
   map_builder = MAP_BUILDER,
   trajectory_builder = TRAJECTORY_BUILDER,
   map_frame = "map",
-  tracking_frame = "base_footprint",
+  tracking_frame = "base_link",
   -- base_link改为odom,发布map到odom之间的位姿态
   published_frame = "odom",
   odom_frame = "odom",
