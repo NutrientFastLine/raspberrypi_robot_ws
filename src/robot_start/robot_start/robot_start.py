@@ -29,7 +29,10 @@ class RobotStart(Node):
         self.last_time = 0.0
         self.current_time =0.0
         self.dt =0.0
+        self.quaternion_euler = []
         self.quaternion = []
+        self.euler = []
+
 
         self.power_valtage = 0.0
         self.offsetcount = 0
@@ -141,8 +144,16 @@ class RobotStart(Node):
                     self.mpu6050.angular_velocity.y -= self.Gyroscope_Ydata_Offset
                     self.mpu6050.angular_velocity.z -= self.Gyroscope_Zdata_Offset
                     
-                    self.quaternion = Update_IMU(0.0,0.0,self.mpu6050.linear_acceleration.z,0.0,0.0,self.mpu6050.angular_velocity.z)
-                
+                    self.quaternion_euler = Update_IMU(0.0,0.0,self.mpu6050.linear_acceleration.z,0.0,0.0,self.mpu6050.angular_velocity.z)
+                    self.quaternion[:] = self.quaternion_euler[:4]
+                    self.euler[:] = self.quaternion_euler[4:]
+
+                    print("############################")
+                    print("Az_Wz: ",self.mpu6050.linear_acceleration.z,self.mpu6050.angular_velocity.z)
+                    # print("quaternion_xyzw: ",self.quaternion)
+                    # print("euler_rpy: ",self.euler)
+
+
                     self.publisherpower()
                     self.publisherodom()
                     self.publisherimusensor()

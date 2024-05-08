@@ -68,8 +68,8 @@ def Update_IMU(ax,ay,az,gx,gy,gz):
     q3 /= norm
 #q0=w q1=x q2=y q3=z 
 
-    #获取欧拉角 pitch、roll、yaw
-    # pitch = math.asin(-2*q1*q3+2*q0*q2)*57.3
-    # roll = math.atan2(2*q2*q3+2*q0*q1,-2*q1*q1-2*q2*q2+1)*57.3
-    # yaw = math.atan2(2*(q1*q2 + q0*q3),q0*q0+q1*q1-q2*q2-q3*q3)*57.3
-    return q1,q2,q3,q0
+    # 获取欧拉角 pitch、roll、yaw
+    pitch = math.asin(-2*q1*q3+2*q0*q2)*57.3
+    roll = math.atan2(2*q2*q3+2*q0*q1,-2*q1*q1-2*q2*q2+1)*57.3
+    yaw = math.atan2(2*(q1*q2 + q0*q3),q0*q0+q1*q1-q2*q2-q3*q3)*57.3
+    return q1,q2,q3,q0,roll,pitch,yaw
