@@ -33,8 +33,12 @@ def generate_launch_description():
     odom_child_id = LaunchConfiguration('odom_child_id', default='base_link')
     smoother_cmd_vel = LaunchConfiguration('smoother_cmd_vel', default='/cmd_vel')
     odom_pub_topic = LaunchConfiguration('odom_pub_topic', default='/odom_diff')
+    imu_pub_topic = LaunchConfiguration('imu_pub_topic', default='/imu_diff')
     filter_vx_match = LaunchConfiguration('filter_vx_match', default='1.0')
     filter_vth_match = LaunchConfiguration('filter_vth_match', default='1.0')
+
+    odom_pub_topic = '/odom'
+    imu_pub_topic = '/imu_data'
 
     robot_start_node = Node(
         package='robot_start',
@@ -48,6 +52,7 @@ def generate_launch_description():
                 'odom_child_id' : odom_child_id,
                 'smoother_cmd_vel': smoother_cmd_vel,
                 'odom_pub_topic' : odom_pub_topic,
+                'imu_pub_topic' : imu_pub_topic,
                 'filter_vx_match': filter_vx_match,
                 'filter_vth_match': filter_vth_match,
             }

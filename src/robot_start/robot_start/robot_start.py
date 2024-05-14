@@ -53,6 +53,7 @@ class RobotStart(Node):
         self.declare_parameter('odom_child_id', 'base_link')        
         self.declare_parameter('smoother_cmd_vel', '/cmd_vel')
         self.declare_parameter('odom_pub_topic', '/odom')
+        self.declare_parameter('imu_pub_topic', '/imu_data')
         self.declare_parameter('filter_vx_match',1.0)
         self.declare_parameter('filter_vth_match', 1.0)
 
@@ -62,6 +63,7 @@ class RobotStart(Node):
         self.odom_child_id = self.get_parameter('odom_child_id').value
         self.smoother_cmd_vel = self.get_parameter('smoother_cmd_vel').value
         self.odom_pub_topic = self.get_parameter('odom_pub_topic').value
+        self.imu_pub_topic = self.get_parameter('imu_pub_topic').value
         self.filter_vx_match = self.get_parameter('filter_vx_match').value
         self.filter_vth_match = self.get_parameter('filter_vth_match').value
 
@@ -70,7 +72,7 @@ class RobotStart(Node):
         
         self.power_pub = self.create_publisher(Float32,'/robot/powervaltage',20)
         self.odom_pub = self.create_publisher(Odometry,self.odom_pub_topic,50)
-        self.imu_pub = self.create_publisher(Imu,'/imu_data',20)
+        self.imu_pub = self.create_publisher(Imu,self.imu_pub_topic,20)
         self.imu_raw_pub = self.create_publisher(Imu,'/imu_data_raw',20)
 
         self.cmd_vel_sub = self.create_subscription(Twist,self.smoother_cmd_vel,self.cmd_vel_callback,100)
@@ -148,8 +150,8 @@ class RobotStart(Node):
                     self.quaternion[:] = self.quaternion_euler[:4]
                     self.euler[:] = self.quaternion_euler[4:]
 
-                    print("############################")
-                    print("Az_Wz: ",self.mpu6050.linear_acceleration.z,self.mpu6050.angular_velocity.z)
+                    # print("############################")
+                    # print("Az_Wz: ",self.mpu6050.linear_acceleration.z,self.mpu6050.angular_velocity.z)
                     # print("quaternion_xyzw: ",self.quaternion)
                     # print("euler_rpy: ",self.euler)
 
@@ -161,7 +163,7 @@ class RobotStart(Node):
 
             counter += 1
             self.last_time = self.current_time
-            rclpy.spin_once(self, timeout_sec=0.05 )
+            rclpy.spin_once(self, timeout_sec=0.01 )
             
    
     def serial_data_assignment(self):
@@ -224,11 +226,17 @@ class RobotStart(Node):
         transform.transform.translation.x = self.x
         transform.transform.translation.y = self.y
         transform.transform.translation.z = 0.0
-        transform.transform.rotation.x = odom_quat[0]
-        transform.transform.rotation.y = odom_quat[1]
-        transform.transform.rotation.z = odom_quat[2]
-        transform.transform.rotation.w = odom_quat[3]
-        self.odom_broadcaster.sendTransform(transform)
+        # transform.transform.rotation.x = odom_quat[0]
+        # transform.transform.rotation.y = odom_quat[1]
+        # transform.transform.rotation.z = odom_quat[2]
+        # transform.transform.rotation.w = odom_quat[3]
+        transform.transform.rotation.x = self.quaternion[0]
+        transform.transform.rotation.y = self.quaternion[1]
+        transform.transform.rotation.z = self.quaternion[2]
+        transform.transform.rotation.w = self.quaternion[3]
+        # 不发布odom--base_link 使用robot_localization发布
+        # self.odom_broadcaster.sendTransform(transform)  
+
 
         odom = Odometry()
         odom.header.stamp = self.get_clock().now().to_msg()
@@ -241,6 +249,10 @@ class RobotStart(Node):
         odom.pose.pose.orientation.y = odom_quat[1]
         odom.pose.pose.orientation.z = odom_quat[2]
         odom.pose.pose.orientation.w = odom_quat[3]
+        # odom.pose.pose.orientation.x = self.quaternion[0]
+        # odom.pose.pose.orientation.y = self.quaternion[1]
+        # odom.pose.pose.orientation.z = self.quaternion[2]
+        # odom.pose.pose.orientation.w = self.quaternion[3]
 
         odom.child_frame_id = self.odom_child_id
         odom.twist.twist.linear.x =  self.vx

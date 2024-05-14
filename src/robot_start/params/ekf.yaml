@@ -33,20 +33,29 @@ ekf_filter_node:
         world_frame: odom           # Defaults to the value of odom_frame if unspecified
 
         odom0: /odom_diff
-        # odom0_config: [true, true, true,
-        #                true, true, true,
-        #                true, true, true,
-        #                true, true, true,
-        #                false, false, false]
-        odom0_config: [true, true, true,
+        odom0_config: [false, false, false,
                        false, false, false,
-                       false, false, false,
+                       true, true, true,
                        false, false, true,
                        false, false, false]
 
-        imu0: /imu_data
+        imu0: /imu_diff
         imu0_config: [false, false, false,
+                      false, false, false,
+                      false, false, false,
                       true, true, true,
-                      false, false, false,
-                      false, false, false,
                       false, false, false]
+
+        # odom0: /odom_diff
+        # odom0_config: [true, true, true,
+        #                false, false, false,
+        #                false, false, false,
+        #                false, false, true,
+        #                false, false, false]
+
+        # imu0: /imu_diff
+        # imu0_config: [false, false, false,
+        #               true, true, true,
+        #               false, false, false,
+        #               false, false, false,
+        #               false, false, false]

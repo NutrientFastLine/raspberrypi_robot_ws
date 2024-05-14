@@ -19,7 +19,7 @@ def generate_launch_description():
     nav2_planner_yaml     = os.path.join(robot_navigation2_dir,'param','nav2_planner.yaml')
     nav2_waypointfollower_yaml     = os.path.join(robot_navigation2_dir,'param','nav2_waypointfollower.yaml')
 
-    map_yaml_path = LaunchConfiguration('map',default=os.path.join(robot_navigation2_dir,'maps','test1_map.yaml'))
+    map_yaml_path = LaunchConfiguration('map',default=os.path.join(robot_navigation2_dir,'maps','gonwei_V3.yaml'))
 
     rviz_config_dir = os.path.join(robot_navigation2_dir,'rviz2','robot_nav2_test.rviz')
 
@@ -81,8 +81,8 @@ def generate_launch_description():
             name='lifecycle_manager_nav2',
             parameters=[{'use_sim_time': False},
                         {'autostart':True},
-                        {'node_names':['planner_server',
-                                       'controller_server',
+                        {'node_names':['controller_server',
+                                       'planner_server',
                                        'behavior_server',
                                        'bt_navigator']}],
             output='screen')
