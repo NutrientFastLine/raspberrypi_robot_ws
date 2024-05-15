@@ -37,8 +37,8 @@ def generate_launch_description():
     filter_vx_match = LaunchConfiguration('filter_vx_match', default='1.0')
     filter_vth_match = LaunchConfiguration('filter_vth_match', default='1.0')
 
-    odom_pub_topic = '/odom'
-    imu_pub_topic = '/imu_data'
+    # odom_pub_topic = '/odom'
+    # imu_pub_topic = '/imu_data'
 
     robot_start_node = Node(
         package='robot_start',

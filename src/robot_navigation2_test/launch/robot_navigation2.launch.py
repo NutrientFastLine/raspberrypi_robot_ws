@@ -19,7 +19,8 @@ def generate_launch_description():
     nav2_planner_yaml     = os.path.join(robot_navigation2_dir,'param','nav2_planner.yaml')
     nav2_waypointfollower_yaml     = os.path.join(robot_navigation2_dir,'param','nav2_waypointfollower.yaml')
 
-    map_yaml_path = LaunchConfiguration('map',default=os.path.join(robot_navigation2_dir,'maps','gonwei_V3.yaml'))
+    map_yaml_path = LaunchConfiguration('map',default=os.path.join(robot_navigation2_dir,'map
+    s','gonwei_V3.yaml'))
 
     rviz_config_dir = os.path.join(robot_navigation2_dir,'rviz2','robot_nav2_test.rviz')
 
